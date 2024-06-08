@@ -23,7 +23,6 @@ FetchContent_Declare(dawn
       "${CMAKE_CURRENT_LIST_DIR}/GclientSync.cmake"
       "-DGCLIENT_SYNC_TARGET_SOURCE_DIR=${FETCHCONTENT_BASE_DIR}/dawn-src")
 
-set(BUILD_SHARED_LIBS ON)
 # Dawn outputs various library files in a directory structure that mirrors
 # it's source tree. While this is convenient to understand provenance,
 # having all of them under one roof is quite convenient for packaging.
@@ -43,16 +42,39 @@ set(TINT_BUILD_TESTS OFF)
 FetchContent_MakeAvailable(dawn)
 
 # Until dawn is able to build shared libraries successfully, we build it by hand.
-add_library(webgpu_dyndawn SHARED "${dawn_BINARY_DIR}/gen/src/dawn/native/webgpu_dawn_native_proc.cpp")
-# 'nested-namespace-definition' requires compiler flag '/std:c++17'
-target_compile_features(webgpu_dyndawn PRIVATE cxx_std_17)
-target_link_libraries(webgpu_dyndawn
-  PRIVATE dawn_native
-  PUBLIC dawn_headers)
-target_compile_definitions(webgpu_dyndawn
-  PUBLIC "WGPU_SHARED_LIBRARY")
-target_compile_definitions(webgpu_dyndawn
-  PRIVATE "WGPU_IMPLEMENTATION")
+# Ask dawn to generate static libraries and bundle them all into one giant shared library.
+set(BUILD_SHARED_LIBS OFF)
+list(APPEND CMAKE_MODULE_PATH "${dawn_SOURCE_DIR}/tools/android/webgpu/src/main/cpp")
+include(BundleLibraries)
+# So that wgpuXXX symbols are exported from webgpu.h
+target_compile_definitions(webgpu_dawn
+  PRIVATE "WGPU_IMPLEMENTATION"
+  PUBLIC  "WGPU_SHARED_LIBRARY")
+bundle_libraries(webgpu_dyndawn webgpu_dawn dawn_native absl::raw_hash_set)
+# Handle platform specific link libraries. This was done in dawn/native/CMakeLists.txt,
+# however, they're lost since all libraries were shredded down to individial objects in bundle_libraries.
+if (DAWN_ENABLE_METAL)
+  if (DAWN_TARGET_MACOS)
+    target_link_libraries(webgpu_dyndawn PRIVATE "-framework Cocoa")
+  endif()
+  target_link_libraries(webgpu_dyndawn PRIVATE
+  "-framework IOKit"
+  "-framework IOSurface"
+  "-framework QuartzCore"
+  "-framework Metal")
+endif ()
+if (WIN32 AND NOT WINDOWS_STORE)
+  target_link_libraries(webgpu_dyndawn PRIVATE user32.lib)
+endif()
+if (WINDOWS_STORE)
+  target_link_libraries(webgpu_dyndawn PRIVATE debug dxgi.lib)
+endif()
+if (DAWN_ENABLE_D3D12)
+  target_link_libraries(webgpu_dyndawn PRIVATE dxguid.lib)
+  if (DAWN_USE_BUILT_DXC)
+    target_link_libraries(webgpu_dyndawn PRIVATE dxcompiler)
+  endif()
+endif ()
 
 include(CTest)
 set(BUILD_TESTING ON)
