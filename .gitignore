@@ -1,0 +1,6 @@
+.cache
+.clangd
+.vscode
+depot_tools*
+out
+compile_commands.json
