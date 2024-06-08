@@ -23,6 +23,14 @@ FetchContent_Declare(dawn
       "${CMAKE_CURRENT_LIST_DIR}/GclientSync.cmake"
       "-DGCLIENT_SYNC_TARGET_SOURCE_DIR=${FETCHCONTENT_BASE_DIR}/dawn-src")
 
+set(BUILD_SHARED_LIBS ON)
+# Dawn outputs various library files in a directory structure that mirrors
+# it's source tree. While this is convenient to understand provenance,
+# having all of them under one roof is quite convenient for packaging.
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
+set(CMAKE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin")
+
 # Disable unneeded parts
 set(DAWN_BUILD_SAMPLES OFF)
 set(DAWN_USE_GLFW OFF)
@@ -34,16 +42,17 @@ set(TINT_BUILD_TESTS OFF)
 
 FetchContent_MakeAvailable(dawn)
 
-# add_library(dawn SHARED "${dawn_BINARY_DIR}/gen/src/dawn/native/webgpu_dawn_native_proc.cpp")
-# # 'nested-namespace-definition' requires compiler flag '/std:c++17'
-# target_compile_features(dawn PRIVATE cxx_std_17)
-# target_link_libraries(dawn
-#   PRIVATE dawn_native
-#   PUBLIC dawn_headers)
-# target_compile_definitions(dawn
-#   PUBLIC "WGPU_SHARED_LIBRARY")
-# target_compile_definitions(dawn
-#   PRIVATE "WGPU_IMPLEMENTATION")
+# Until dawn is able to build shared libraries successfully, we build it by hand.
+add_library(webgpu_dyndawn SHARED "${dawn_BINARY_DIR}/gen/src/dawn/native/webgpu_dawn_native_proc.cpp")
+# 'nested-namespace-definition' requires compiler flag '/std:c++17'
+target_compile_features(webgpu_dyndawn PRIVATE cxx_std_17)
+target_link_libraries(webgpu_dyndawn
+  PRIVATE dawn_native
+  PUBLIC dawn_headers)
+target_compile_definitions(webgpu_dyndawn
+  PUBLIC "WGPU_SHARED_LIBRARY")
+target_compile_definitions(webgpu_dyndawn
+  PRIVATE "WGPU_IMPLEMENTATION")
 
 include(CTest)
 set(BUILD_TESTING ON)
@@ -60,9 +69,10 @@ if (BUILD_TESTING)
   target_include_directories(webgpu_headers INTERFACE "${webgpu_headers_SOURCE_DIR}")
 
   add_executable(simple_cpp tests/simple.cpp)
+  target_compile_features(simple_cpp PRIVATE cxx_std_17)
   target_link_libraries(simple_cpp PRIVATE webgpu_headers)
-  add_test(test-simple-cpp simple_cpp)
+  add_test(NAME test-simple-cpp COMMAND simple_cpp "$<TARGET_FILE:webgpu_dyndawn>")
   add_executable(simple_c tests/simple.c)
   target_link_libraries(simple_c PRIVATE webgpu_headers)
-  add_test(test-simple-c simple_c)
+  add_test(NAME test-simple-c COMMAND simple_c "$<TARGET_FILE:webgpu_dyndawn>")
 endif ()

@@ -12,7 +12,6 @@
 #define LOAD_LIBRARY(name) LoadLibrary(TEXT(name))
 #define UNLOAD_LIBRARY(lib) FreeLibrary(lib)
 #define LIBRARY_HANDLE_TYPE HINSTANCE
-#define DAWN_LIBRARY "./dawn.dll"
 #define LOAD_SYMBOL(symbol, pSymbol)                                           \
   do {                                                                         \
     symbol = (pSymbol)GetProcAddress(webgpuImpl, #symbol);                     \
@@ -36,11 +35,6 @@
     }                                                                          \
   } while (0)
 #define LOAD_WGPU_SYMBOL(name) LOAD_SYMBOL(wgpu##name, WGPUProc##name)
-#if defined(__APPLE__)
-#define DAWN_LIBRARY "./libdawn.dylib"
-#else
-#define DAWN_LIBRARY "./libdawn.so"
-#endif
 #endif
 
 typedef struct AdapterCallbackBridge {
@@ -59,8 +53,12 @@ void onAdapterReceived(WGPURequestAdapterStatus status, WGPUAdapter adapter,
 }
 
 int main(int argc, char **argv) {
+  if (argc < 2) {
+    fprintf(stderr, "Usage: simple_c /path/to/<webgpu_implementation_lib>\n");
+    return EXIT_FAILURE;
+  }
   LIBRARY_HANDLE_TYPE webgpuImpl = NULL;
-  webgpuImpl = LOAD_LIBRARY(DAWN_LIBRARY);
+  webgpuImpl = LOAD_LIBRARY(argv[1]);
   if (webgpuImpl == NULL) {
     return EXIT_FAILURE;
   }

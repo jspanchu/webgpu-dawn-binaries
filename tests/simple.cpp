@@ -14,7 +14,6 @@
 #define LOAD_LIBRARY(name) LoadLibrary(TEXT(name))
 #define UNLOAD_LIBRARY(lib) FreeLibrary(lib)
 #define LIBRARY_HANDLE_TYPE HINSTANCE
-#define DAWN_LIBRARY "./webgpu_dawn.dll"
 #define LOAD_SYMBOL(symbol, pSymbol)                                           \
   do {                                                                         \
     symbol = (pSymbol)GetProcAddress(webgpuImpl, #symbol);                     \
@@ -38,15 +37,14 @@
     }                                                                          \
   } while (0)
 #define LOAD_WGPU_SYMBOL(name) LOAD_SYMBOL(wgpu##name, WGPUProc##name)
-#if defined(__APPLE__)
-#define DAWN_LIBRARY "./libwebgpu_dawn.dylib"
-#else
-#define DAWN_LIBRARY "./libwebgpu_dawn.so"
-#endif
 #endif
 
-int main(int, char **) {
-  LIBRARY_HANDLE_TYPE webgpuImpl = LOAD_LIBRARY(DAWN_LIBRARY);
+int main(int argc, char **argv) {
+  if (argc < 2) {
+    fprintf(stderr, "Usage: simple_cpp /path/to/<webgpu_implementation_lib>\n");
+    return EXIT_FAILURE;
+  }
+  LIBRARY_HANDLE_TYPE webgpuImpl = LOAD_LIBRARY(argv[1]);
   if (webgpuImpl == nullptr) {
     return EXIT_FAILURE;
   }
