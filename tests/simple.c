@@ -53,10 +53,12 @@ void onAdapterReceived(WGPURequestAdapterStatus status, WGPUAdapter adapter,
 }
 
 int main(int argc, char **argv) {
+  fprintf(stderr, "argc: %d\n", argc);
   if (argc < 2) {
     fprintf(stderr, "Usage: simple_c /path/to/<webgpu_implementation_lib>\n");
     return EXIT_FAILURE;
   }
+  fprintf(stderr, "argv: %s %s\n", argv[0], argv[1]);
   LIBRARY_HANDLE_TYPE webgpuImpl = NULL;
   webgpuImpl = LOAD_LIBRARY(argv[1]);
   if (webgpuImpl == NULL) {
@@ -94,4 +96,5 @@ int main(int argc, char **argv) {
     fprintf(stderr, "wgpuInstanceRequestAdapter failed!\n");
     return EXIT_FAILURE;
   }
+  return EXIT_SUCCESS;
 }

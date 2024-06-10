@@ -1,0 +1,127 @@
+name: CMake on multiple platforms
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
+      fail-fast: false
+
+      # Set up a matrix to run the following 3 configurations:
+      # 1. <Windows, Release, latest MSVC compiler toolchain on the default runner image, default generator>
+      # 2. <Linux, Release, latest Clang compiler toolchain on the default runner image, default generator>
+      # 3. <MacOS, Release, latest Clang compiler toolchain on the default runner image, default generator>
+      matrix:
+        os: [macos-14, ubuntu-22.04, windows-2022]
+        build_type: [Release]
+        toolchain: [clang, msvc]
+        include:
+          - os: macos-14
+            toolchain: clang
+            c_compiler: $(brew --prefix llvm@15)/bin/clang
+            cpp_compiler: $(brew --prefix llvm@15)/bin/clang++
+            artifact_name: dawn-macos-arm64
+          - os: windows-2022
+            toolchain: msvc
+            c_compiler: cl
+            cpp_compiler: cl
+            artifact_name: dawn-win-x86_64
+          - os: ubuntu-22.04
+            toolchain: clang
+            c_compiler: clang-18
+            cpp_compiler: clang++-18
+            artifact_name: dawn-linux-x86_64
+        exclude:
+            - os: macos-14
+              toolchain: msvc
+            - os: ubuntu-22.04
+              toolchain: msvc
+            - os: windows-2022
+              toolchain: clang
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set reusable strings
+      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
+      id: strings
+      shell: bash
+      run: |
+        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+    - name: Set up dependencies on linux
+      if: matrix.os == 'ubuntu-22.04'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xcb libxcb-xkb-dev x11-xkb-utils libx11-xcb-dev libxkbcommon-x11-dev
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x ./llvm.sh
+        sudo ./llvm.sh 18
+        clang-18 --version
+
+    - name: Configure CMake
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      run: >
+        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -S ${{ github.workspace }}
+
+    - name: Build
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+
+    - name: Install
+      run: cmake --install ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --prefix install
+
+    - name: Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact_name }}
+        path: install
+
+    - name: Aniticipate crash dumps on windows
+      if: matrix.os == 'windows-2022'
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      run: |
+        mkdir CrashDumps
+        reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v DumpFolder /d ${{ github.workspace }}\build\CrashDumps /t REG_EXPAND_SZ /f
+
+    - name: Aniticipate crash dumps on Linux
+      if: matrix.os == 'ubuntu-22.04'
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      run: |
+        ulimit -c unlimited
+        mkdir CrashDumps
+        sudo chmod 777 $PWD/CrashDumps
+        # Core filenames will be of the form executable.pid.timestamp:
+        sudo bash -c 'echo "$PWD/CrashDumps/%e.%p.%t" > /proc/sys/kernel/core_pattern'
+        cat /proc/sys/kernel/core_pattern
+
+    - name: Aniticipate crash dumps on macOS
+      if: matrix.os == 'macos-14'
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      run: mkdir CrashDumps # TODO
+
+    - name: Test
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      run: |
+        ctest --output-on-failure -C ${{ matrix.build_type }}
+        ls CrashDumps
+
+    - name: Crash dump
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: dawn_test_crash_dump
+        path: |
+          ${{ github.workspace }}\build\CrashDumps\*.dmp

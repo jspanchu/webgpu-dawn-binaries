@@ -41,7 +41,7 @@
 
 int main(int argc, char **argv) {
   if (argc < 2) {
-    fprintf(stderr, "Usage: simple_cpp /path/to/<webgpu_implementation_lib>\n");
+    std::cerr << "Usage: simple_cpp /path/to/<webgpu_implementation_lib>\n";
     return EXIT_FAILURE;
   }
   LIBRARY_HANDLE_TYPE webgpuImpl = LOAD_LIBRARY(argv[1]);
@@ -50,6 +50,7 @@ int main(int argc, char **argv) {
   }
   WGPUProcCreateInstance wgpuCreateInstance = nullptr;
   LOAD_WGPU_SYMBOL(CreateInstance);
+  std::cerr << wgpuCreateInstance << '\n';
 
   WGPUInstance instance = wgpuCreateInstance(nullptr);
   if (instance == nullptr) {
@@ -95,4 +96,5 @@ int main(int argc, char **argv) {
     std::cerr << "wgpuInstanceRequestAdapter failed!\n";
     return EXIT_FAILURE;
   }
+  return EXIT_SUCCESS;
 }
