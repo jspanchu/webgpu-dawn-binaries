@@ -8,7 +8,7 @@ See [tests/simple.c](tests/simple.c) and [tests/simple.cpp](tests/simple.cpp) fo
 
 # linux
 ```cpp
-#include <webgpu/webgpu.h>
+#include <dawn/webgpu.h>
 #include <dlfcn.h>
 void* lib = dlopen(libdawn.so, RTLD_LAZY);
 WGPUProcCreateInstance wgpuCreateInstance = (WGPUProcCreateInstance)dlsym(lib, "wgpuCreateInstance");
@@ -17,6 +17,7 @@ WGPUProcCreateInstance wgpuCreateInstance = (WGPUProcCreateInstance)dlsym(lib, "
 
 # macOS
 ```cpp
+#include <dawn/webgpu.h>
 #include <dlfcn.h>
 void* lib = dlopen(libdawn.dyld, RTLD_LAZY);
 WGPUProcCreateInstance wgpuCreateInstance = (WGPUProcCreateInstance)dlsym(lib, "wgpuCreateInstance");
@@ -25,6 +26,7 @@ WGPUProcCreateInstance wgpuCreateInstance = (WGPUProcCreateInstance)dlsym(lib, "
 
 # windows
 ```cpp
+#include <dawn/webgpu.h>
 #include <windows.h>
 HINSTANCE lib = LoadLibraryA(TEXT(dawn.dll));
 WGPUProcCreateInstance wgpuCreateInstance = (WGPUProcCreateInstance)GetProcAddress(lib, "wgpuCreateInstance");
