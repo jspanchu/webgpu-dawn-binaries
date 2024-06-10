@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.23 FATAL_ERROR)
-project(dawn_bundled
+project(webgpu-dawn
   VERSION 127.0.6526.1
   LANGUAGES C CXX)
 # D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR is a temporary workaround for a Visual Studio 2022 and github actions mess
