@@ -1,7 +1,14 @@
 cmake_minimum_required(VERSION 3.23 FATAL_ERROR)
+file(READ "chromium_version.txt" CHROMIUM_VERSION)
+string(REPLACE "." ";" VERSION_LIST ${CHROMIUM_VERSION})
+list(GET VERSION_LIST 0 CHROMIUM_VERSION_MAJOR)
+list(GET VERSION_LIST 1 CHROMIUM_VERSION_MINOR)
+list(GET VERSION_LIST 2 CHROMIUM_VERSION_PATCH)
+list(GET VERSION_LIST 3 CHROMIUM_VERSION_TWEAK)
 project(webgpu-dawn
-  VERSION 127.0.6526.1
+  VERSION ${CHROMIUM_VERSION_MAJOR}.${CHROMIUM_VERSION_MINOR}.${CHROMIUM_VERSION_PATCH}.${CHROMIUM_VERSION_TWEAK}
   LANGUAGES C CXX)
+message(STATUS "Building dawn@chromium/${CHROMIUM_VERSION_PATCH} version ${PROJECT_VERSION}")
 # D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR is a temporary workaround for a Visual Studio 2022 and github actions mess
 # check if resolved here: https://github.com/actions/runner-images/issues/10004
 if (MSVC)
@@ -14,7 +21,7 @@ include(FetchContent)
 set(dawn_disconnect_subsequent_updates ON)
 FetchContent_Declare(dawn
   GIT_REPOSITORY      https://dawn.googlesource.com/dawn
-  GIT_TAG             chromium/6526
+  GIT_TAG             "chromium/${CHROMIUM_VERSION_PATCH}"
   GIT_SUBMODULES      ""
   GIT_SHALLOW         ON
   UPDATE_DISCONNECTED ${dawn_disconnect_subsequent_updates}
@@ -24,7 +31,7 @@ FetchContent_Declare(dawn
     "${CMAKE_COMMAND}"
       -V
       -P
-      "${CMAKE_CURRENT_LIST_DIR}/GclientSync.cmake"
+      "${CMAKE_CURRENT_LIST_DIR}/tools/cmake/GclientSync.cmake"
       "-DGCLIENT_SYNC_TARGET_SOURCE_DIR=${FETCHCONTENT_BASE_DIR}/dawn-src")
 # Dawn outputs various library files in a directory structure that mirrors
 # it's source tree. While this is convenient to understand provenance,
@@ -99,9 +106,8 @@ if (BUILD_TESTING)
   set(webgpu_headers_disconnect_subsequent_updates ON)
   FetchContent_Declare(webgpu_headers
     GIT_REPOSITORY "https://github.com/webgpu-native/webgpu-headers.git"
-    GIT_TAG         2a1599527dcacae8af6240c43902ec10b5bb22c3 # June 7, 2024
+    GIT_TAG         "f686ddfe70bf77a6b0e33a6b7dfce09c93e249c0" # June 10, 2024
     GIT_SUBMODULES  ""
-    GIT_SHALLOW     ON
     UPDATE_DISCONNECTED ${webgpu_headers_disconnect_subsequent_updates})
   FetchContent_MakeAvailable(webgpu_headers)
   add_library(webgpu_headers INTERFACE)

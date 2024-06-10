@@ -16,7 +16,8 @@ concurrency:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-
+    env:
+      SCCACHE_GHA_ENABLED: "true"
     strategy:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
       fail-fast: false
@@ -54,13 +55,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-
+  
     - name: Set reusable strings
       id: strings
       shell: bash
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
+    - name: Use sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.3
+  
     - name: Set up dependencies on linux
       if: matrix.os == 'ubuntu-22.04'
       run: |
@@ -76,6 +80,8 @@ jobs:
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+        -DCMAKE_C_COMPILER_LAUNCHER=sccache
+        -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -S ${{ github.workspace }}
 
@@ -88,7 +94,7 @@ jobs:
         -G ZIP
         -C ${{ matrix.build_type }}
         -B dist
-    
+
     - name: Upload package artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -156,6 +162,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: >-
           gh release create ${{ github.ref_name }}
-          "dist/*.zip"
           --generate-notes
-          --title "webgpu-dawn-${{ github.ref_name }}
+          --title "webgpu-dawn-${{ github.ref_name }}"
+          dist/*.zip
