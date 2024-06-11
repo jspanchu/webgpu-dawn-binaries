@@ -115,10 +115,10 @@ if (BUILD_TESTING)
 
   add_executable(simple_cpp tests/simple.cpp)
   target_compile_features(simple_cpp PRIVATE cxx_std_17)
-  target_link_libraries(simple_cpp PRIVATE webgpu_headers)
+  target_link_libraries(simple_cpp PRIVATE webgpu_headers ${CMAKE_DL_LIBS})
   add_test(NAME test-simple-cpp COMMAND simple_cpp "$<TARGET_FILE:dawn>")
   add_executable(simple_c tests/simple.c)
-  target_link_libraries(simple_c PRIVATE webgpu_headers)
+  target_link_libraries(simple_c PRIVATE webgpu_headers ${CMAKE_DL_LIBS})
   add_test(NAME test-simple-c COMMAND simple_c "$<TARGET_FILE:dawn>")
 endif ()
 # Packaging
