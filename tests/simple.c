@@ -43,15 +43,6 @@ typedef struct AdapterCallbackBridge {
   int satisfied;
 } AdapterCallbackBridge;
 
-void onAdapterReceived(WGPURequestAdapterStatus status, WGPUAdapter adapter,
-                       char const *message, void *userdata) {
-  AdapterCallbackBridge *adapterCallbackBridge =
-      (AdapterCallbackBridge *)userdata;
-  adapterCallbackBridge->status = status;
-  adapterCallbackBridge->adapter = adapter;
-  adapterCallbackBridge->satisfied = 1;
-}
-
 int main(int argc, char **argv) {
   fprintf(stderr, "argc: %d\n", argc);
   if (argc < 2) {
@@ -82,19 +73,5 @@ int main(int argc, char **argv) {
   WGPUProcInstanceProcessEvents wgpuInstanceProcessEvents = NULL;
   LOAD_WGPU_SYMBOL(InstanceProcessEvents);
 
-  AdapterCallbackBridge adapterCallbackBridge;
-  adapterCallbackBridge.adapter = NULL;
-  adapterCallbackBridge.status = WGPURequestAdapterStatus_Unknown;
-  adapterCallbackBridge.satisfied = 0;
-  wgpuInstanceRequestAdapter(instance, &adapterOpts, onAdapterReceived,
-                             &adapterCallbackBridge);
-  do {
-    wgpuInstanceProcessEvents(instance);
-  } while (!adapterCallbackBridge.satisfied);
-  if (adapterCallbackBridge.status != WGPURequestAdapterStatus_Success ||
-      adapterCallbackBridge.adapter == NULL) {
-    fprintf(stderr, "wgpuInstanceRequestAdapter failed!\n");
-    return EXIT_FAILURE;
-  }
   return EXIT_SUCCESS;
 }

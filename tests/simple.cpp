@@ -1,9 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) Jaswant Sai Panchumarti
 // SPDX-License-Identifier: Apache-2.0
 
-#include <chrono>
 #include <cstdlib>
-#include <future>
 #include <iostream>
 
 #define WGPU_SKIP_DECLARATIONS
@@ -67,34 +65,5 @@ int main(int argc, char **argv) {
   WGPUProcInstanceProcessEvents wgpuInstanceProcessEvents = nullptr;
   LOAD_WGPU_SYMBOL(InstanceProcessEvents);
 
-  struct AdapterCallbackBridge {
-    WGPURequestAdapterStatus status{WGPURequestAdapterStatus_Unknown};
-    WGPUAdapter adapter = {nullptr};
-    std::promise<void> satisfied;
-  } adapterCallbackBridge;
-  auto onAdapterReceived = [](WGPURequestAdapterStatus status,
-                              WGPUAdapter adapter, char const *message,
-                              void *userdata) {
-    auto &adapterCallbackBridge =
-        *(reinterpret_cast<AdapterCallbackBridge *>(userdata));
-    adapterCallbackBridge.status = status;
-    adapterCallbackBridge.adapter = adapter;
-    adapterCallbackBridge.satisfied.set_value();
-  };
-  wgpuInstanceRequestAdapter(instance, &adapterOpts, onAdapterReceived,
-                             &adapterCallbackBridge);
-  std::future<void> f = adapterCallbackBridge.satisfied.get_future();
-  do {
-    wgpuInstanceProcessEvents(instance);
-    auto fStatus = f.wait_for(std::chrono::milliseconds(10));
-    if (fStatus == std::future_status::ready) {
-      break;
-    }
-  } while (true);
-  if (adapterCallbackBridge.status != WGPURequestAdapterStatus_Success ||
-      adapterCallbackBridge.adapter == nullptr) {
-    std::cerr << "wgpuInstanceRequestAdapter failed!\n";
-    return EXIT_FAILURE;
-  }
   return EXIT_SUCCESS;
 }
