@@ -23,16 +23,7 @@ FetchContent_Declare(dawn
   GIT_REPOSITORY      https://dawn.googlesource.com/dawn
   GIT_TAG             "chromium/${CHROMIUM_VERSION_PATCH}"
   GIT_SUBMODULES      ""
-  GIT_SHALLOW         ON
-  UPDATE_DISCONNECTED ${dawn_disconnect_subsequent_updates}
-  PATCH_COMMAND
-    "${CMAKE_COMMAND}"
-      -E copy "scripts/standalone.gclient" ".gclient" &&
-    "${CMAKE_COMMAND}"
-      -V
-      -P
-      "${CMAKE_CURRENT_LIST_DIR}/tools/cmake/GclientSync.cmake"
-      "-DGCLIENT_SYNC_TARGET_SOURCE_DIR=${FETCHCONTENT_BASE_DIR}/dawn-src")
+  GIT_SHALLOW         ON)
 # Dawn outputs various library files in a directory structure that mirrors
 # it's source tree. While this is convenient to understand provenance,
 # having all of them under one roof is quite convenient for packaging.
@@ -45,7 +36,8 @@ set(BUILD_SHARED_LIBS OFF)
 # Disable unneeded parts
 set(DAWN_BUILD_SAMPLES OFF)
 set(DAWN_USE_GLFW OFF)
-set(DAWN_FETCH_DEPENDENCIES OFF)
+set(DAWN_BUILD_PROTOBUF OFF)
+set(DAWN_FETCH_DEPENDENCIES ON)
 set(TINT_BUILD_CMD_TOOLS OFF)
 set(TINT_BUILD_SAMPLES OFF)
 set(TINT_BUILD_DOCS OFF)
