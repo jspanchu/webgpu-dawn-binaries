@@ -37,12 +37,6 @@
 #define LOAD_WGPU_SYMBOL(name) LOAD_SYMBOL(wgpu##name, WGPUProc##name)
 #endif
 
-typedef struct AdapterCallbackBridge {
-  WGPURequestAdapterStatus status;
-  WGPUAdapter adapter;
-  int satisfied;
-} AdapterCallbackBridge;
-
 int main(int argc, char **argv) {
   fprintf(stderr, "argc: %d\n", argc);
   if (argc < 2) {
@@ -63,15 +57,6 @@ int main(int argc, char **argv) {
     fprintf(stderr, "wgpuCreateInstance failed to create an instance!\n");
     return EXIT_FAILURE;
   }
-
-  WGPUProcInstanceRequestAdapter wgpuInstanceRequestAdapter = NULL;
-  LOAD_WGPU_SYMBOL(InstanceRequestAdapter);
-
-  WGPURequestAdapterOptions adapterOpts = {};
-  adapterOpts.nextInChain = NULL;
-
-  WGPUProcInstanceProcessEvents wgpuInstanceProcessEvents = NULL;
-  LOAD_WGPU_SYMBOL(InstanceProcessEvents);
 
   return EXIT_SUCCESS;
 }
