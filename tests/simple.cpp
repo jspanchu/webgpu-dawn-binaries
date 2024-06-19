@@ -43,6 +43,7 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
   LIBRARY_HANDLE_TYPE webgpuImpl = LOAD_LIBRARY(argv[1]);
+  std::cerr << webgpuImpl << '\n';
   if (webgpuImpl == nullptr) {
     return EXIT_FAILURE;
   }
@@ -55,15 +56,6 @@ int main(int argc, char **argv) {
     std::cerr << "wgpuCreateInstance failed to create an instance!\n";
     return EXIT_FAILURE;
   }
-
-  WGPUProcInstanceRequestAdapter wgpuInstanceRequestAdapter = nullptr;
-  LOAD_WGPU_SYMBOL(InstanceRequestAdapter);
-
-  WGPURequestAdapterOptions adapterOpts = {};
-  adapterOpts.nextInChain = nullptr;
-
-  WGPUProcInstanceProcessEvents wgpuInstanceProcessEvents = nullptr;
-  LOAD_WGPU_SYMBOL(InstanceProcessEvents);
 
   return EXIT_SUCCESS;
 }

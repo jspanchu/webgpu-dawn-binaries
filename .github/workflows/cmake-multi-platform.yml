@@ -110,7 +110,7 @@ jobs:
     - name: Test
       working-directory: build
       run: |
-        ctest --output-on-failure -C ${{ matrix.build_type }}
+        ctest -VV -C ${{ matrix.build_type }}
 
     - name: Upload crash dump
       if: failure() && contains(matrix.os, 'windows')
